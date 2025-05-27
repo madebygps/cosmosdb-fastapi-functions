@@ -12,7 +12,7 @@ This is an inventory management API that lets you:
 ## Prerequisites
 
 - [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local)
-- [Python 3.11+](https://www.python.org/downloads/) (if using Python)
+- [Python 3.11+](https://www.python.org/downloads/)
 - [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)
 - [Azure Developer CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
 
