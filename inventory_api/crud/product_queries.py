@@ -1,38 +1,27 @@
 """Query operations for products (list, search, categories)."""
-from azure.cosmos.aio import ContainerProxy
-from typing import Optional
+import logging
 from builtins import anext
 
+from azure.cosmos.aio import ContainerProxy
 from pydantic import ValidationError
 
-import logging
-from inventory_api.models.product import ProductResponse, ProductList
 from inventory_api.exceptions import handle_cosmos_error
-from .cosmos_serialization import normalize_category, DEFAULT_MAX_ITEMS
+from inventory_api.models.product import ProductList, ProductResponse
 
-# Create a logger for this module
+from .cosmos_serialization import DEFAULT_MAX_ITEMS, normalize_category
+
 logger = logging.getLogger(__name__)
 
 
 async def list_products(
     container: ContainerProxy,
     category: str,
-    continuation_token: Optional[str] = None,
+    continuation_token: str | None = None,
     max_items: int = DEFAULT_MAX_ITEMS
 ) -> ProductList:
     """
     Retrieve a paginated list of products by category.
     """
-    
-    # logger.info() removed for performance
-    # logger.info(
-    #     "Listing products", 
-    #     extra={
-    #         "category": category, 
-    #         "max_items": max_items,
-    #         "has_continuation_token": continuation_token is not None
-    #     }
-    # )
     
     # Normalize category for case-insensitive search
     normalized_category = normalize_category(category)
@@ -59,14 +48,10 @@ async def list_products(
             # Get page of items
             page = await anext(page_iterator)
 
-            # Get items in the page
-            page_items = [item async for item in page]
-
-            # Process items in the page
-            for item in page_items:
+            # Process items directly from the async generator
+            async for item in page:
                 try:
-                    product = ProductResponse.model_validate(item)
-                    items.append(product)
+                    items.append(ProductResponse.model_validate(item))
                 except ValidationError as e:
                     logger.debug(f"Pydantic validation errors: {e.errors()}")
                     continue
@@ -74,12 +59,8 @@ async def list_products(
             # Get continuation token for next page from the page_iterator
             next_continuation_token = page_iterator.continuation_token
             
-            # logger.info() removed for performance
-            # logger.info(f"Retrieved {len(items)} products", extra={"count": len(items)})
 
         except StopAsyncIteration:
-            # logger.info() removed for performance
-            # logger.info("No results found or end of results reached")
             pass
 
         return ProductList(items=items, continuation_token=next_continuation_token)
@@ -107,25 +88,16 @@ async def list_categories(container: ContainerProxy) -> list[str]:
         DatabaseError: If a database operation fails
     """
     
-    # logger.info() removed for performance
-    # logger.info('Listing categories')
-    
     # More efficient query using VALUE to return just the category strings
-    query = "SELECT DISTINCT VALUE c.category FROM c WHERE IS_DEFINED(c.category) AND c.category != null"
+    query = (
+        "SELECT DISTINCT VALUE c.category FROM c "
+        "WHERE IS_DEFINED(c.category) AND c.category != null"
+    )
     try:
-        categories = []
-        query_iterator = container.query_items(
-            query=query
-        )
+        query_iterator = container.query_items(query=query)
         
-        async for category in query_iterator:
-            if category:  # VALUE query returns the category directly
-                categories.append(category)
-                
-        # logger.info() removed for performance
-        # count = len(categories)
-        # logger.info(f"Retrieved {count} categories", extra={"count": count})
-        return categories
+        # VALUE query returns the category directly, filter out empty values
+        return [category async for category in query_iterator if category]
     except Exception as e:
         logger.error(
             "Error during category listing",

@@ -1,8 +1,9 @@
-from azure.cosmos.exceptions import CosmosHttpResponseError, CosmosBatchOperationError
-from fastapi import status, Request, FastAPI
-from fastapi.responses import JSONResponse
 import logging
-from typing import Any, Dict, List, Callable
+from typing import Any, Callable
+
+from azure.cosmos.exceptions import CosmosBatchOperationError, CosmosHttpResponseError
+from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse
 
 class ApplicationError(Exception):
     """Base class for application-specific errors."""
@@ -24,7 +25,7 @@ class DatabaseError(ApplicationError):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     detail = "A database error occurred"
     
-    def __init__(self, message="A database error occurred.", original_exception=None):
+    def __init__(self, message: str = "A database error occurred.", original_exception: Exception | None = None) -> None:
         super().__init__(message)
         self.original_exception = original_exception
 
@@ -39,7 +40,7 @@ class ProductDuplicateSKUError(ApplicationError):
     detail = "A product with this SKU already exists"
 
 
-def handle_cosmos_error(e, operation: str, **context):
+def handle_cosmos_error(e: Exception, operation: str, **context: Any) -> None:
     """
     Convert Cosmos DB exceptions to application-specific exceptions.
     
@@ -90,14 +91,14 @@ def handle_cosmos_error(e, operation: str, **context):
         ) from e
     
     if e.status_code == 404:
-        if operation in ["update", "delete", "get"]:
+        if operation in {"update", "delete", "get"}:
             product_id = context.get("product_id", "unknown")
             category = context.get("category", "unknown")
             raise ProductNotFoundError(
                 f"Product with ID '{product_id}' and category '{category}' not found"
             ) from e
     elif e.status_code == 409:
-        if operation == "create" or operation == "update":
+        if operation in {"create", "update"}:
             error_message = str(e).lower()
             if "unique index constraint" in error_message and "/sku" in error_message:
                 sku = context.get("sku", "unknown")
@@ -134,8 +135,8 @@ async def handle_batch_operation_error(
     e: Exception,
     operation: str,
     category_pk: str,
-    items: List[Any],
-    get_error_context: Callable[[Any, int], Dict[str, Any]]
+    items: list[Any],
+    get_error_context: Callable[[Any, int], dict[str, Any]]
 ) -> None:
     """
     Handle batch operation errors with consistent logging and error context extraction.
@@ -183,14 +184,14 @@ async def handle_batch_operation_error(
         raise
 
 
-def register_exception_handlers(app: FastAPI):
+def register_exception_handlers(app: FastAPI) -> None:
     """
     Register all exception handlers with the FastAPI app.
     This centralizes all error handling in one place.
     """
     
     @app.exception_handler(ApplicationError)
-    async def application_error_handler(request: Request, exc: ApplicationError):
+    async def application_error_handler(request: Request, exc: ApplicationError) -> JSONResponse:
         """Handle application-specific errors."""
         # Get the logger for the current module if possible
         logger = None
@@ -226,7 +227,7 @@ def register_exception_handlers(app: FastAPI):
     
     # Special handler for CosmosDB errors that weren't caught
     @app.exception_handler(CosmosHttpResponseError)
-    async def cosmos_exception_handler(request: Request, exc: CosmosHttpResponseError):
+    async def cosmos_exception_handler(request: Request, exc: CosmosHttpResponseError) -> JSONResponse:
         """Handle any uncaught Cosmos DB errors."""
         # Convert to application error first
         db_error = DatabaseError(f"Database error: {str(exc)}", original_exception=exc)
@@ -236,7 +237,7 @@ def register_exception_handlers(app: FastAPI):
     
     # Special handler for CosmosDB batch errors that weren't caught
     @app.exception_handler(CosmosBatchOperationError)
-    async def cosmos_batch_exception_handler(request: Request, exc: CosmosBatchOperationError):
+    async def cosmos_batch_exception_handler(request: Request, exc: CosmosBatchOperationError) -> JSONResponse:
         """Handle any uncaught Cosmos DB batch errors."""
         # Convert to application error first
         db_error = DatabaseError(f"Batch operation error: {str(exc)}", original_exception=exc)
@@ -245,7 +246,7 @@ def register_exception_handlers(app: FastAPI):
         return await application_error_handler(request, db_error)
     
     @app.exception_handler(Exception)
-    async def fallback_exception_handler(request: Request, exc: Exception):
+    async def fallback_exception_handler(request: Request, exc: Exception) -> JSONResponse:
         """Handle any unhandled exceptions as a fallback."""
         # Get the logger
         logger = None

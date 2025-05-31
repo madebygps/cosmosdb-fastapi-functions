@@ -1,23 +1,26 @@
 """Batch operations for products."""
 import asyncio
-from collections import defaultdict
-from azure.cosmos.aio import ContainerProxy
+import logging
 import uuid
-from typing import Any, Dict, List, Tuple, TypeVar, Callable, Union
+from collections import defaultdict
 from datetime import datetime, timezone
+from typing import Any, Callable, TypeVar
 
+from azure.cosmos.aio import ContainerProxy
+
+from inventory_api.crud.cosmos_serialization import (
+    normalize_category,
+    prepare_decimals_for_cosmos_db,
+)
+from inventory_api.exceptions import handle_batch_operation_error
 from inventory_api.models.product import (
     ProductBatchCreate,
+    ProductBatchDelete,
+    ProductBatchUpdate,
     ProductCreate,
     ProductResponse,
-    ProductBatchUpdate,
-    ProductBatchDelete,
-    ProductStatus
+    ProductStatus,
 )
-import logging
-from inventory_api.exceptions import handle_batch_operation_error
-
-from inventory_api.crud.cosmos_serialization import normalize_category, prepare_decimals_for_cosmos_db
 
 logger = logging.getLogger(__name__)
 
@@ -26,10 +29,10 @@ R = TypeVar('R')
 
 
 async def _execute_batch_by_category(
-    items_by_category: Dict[str, List[T]],
-    process_func: Callable[[str, List[T]], Any],
-    result_extractor: Callable[[Any], List[R]] = None
-) -> Union[List[R], List[Any]]:
+    items_by_category: dict[str, list[T]],
+    process_func: Callable[[str, list[T]], Any],
+    result_extractor: Callable[[Any], list[R]] | None = None
+) -> list[R] | list[Any]:
     """
     Generic function to execute batch operations grouped by category with concurrent processing.
     
@@ -71,7 +74,7 @@ async def _execute_batch_by_category(
     return all_results
 
 
-def _extract_product_responses(batch_results: List[dict], expected_status: int) -> List[ProductResponse]:
+def _extract_product_responses(batch_results: list[dict], expected_status: int) -> list[ProductResponse]:
     """
     Extract ProductResponse objects from Cosmos DB batch results.
     
@@ -100,7 +103,7 @@ def _extract_product_responses(batch_results: List[dict], expected_status: int) 
 async def create_products(
     container: ContainerProxy,
     batch_create: ProductBatchCreate,
-) -> List[ProductResponse]:
+) -> list[ProductResponse]:
     """
     Create multiple products in a batch operation with concurrent processing across categories.
     
@@ -115,15 +118,15 @@ async def create_products(
         return []
         
     # Batch processing requires grouping by partition key (category)
-    products_by_category: Dict[str, List[ProductCreate]] = defaultdict(list)
+    products_by_category: dict[str, list[ProductCreate]] = defaultdict(list)
     for product_model in batch_create.items:
         products_by_category[normalize_category(product_model.category)].append(product_model)
 
-    async def process_category_creates(category_pk: str, product_list_for_category: List[ProductCreate]):
+    async def process_category_creates(category_pk: str, product_list_for_category: list[ProductCreate]) -> list[ProductResponse]:
         if not product_list_for_category:
             return []
             
-        batch_operations_for_db: List[Tuple[str, Tuple[Any, ...], Dict[str, Any]]] = []
+        batch_operations_for_db: list[tuple[str, tuple[Any, ...], dict[str, Any]]] = []
 
         # Add id, status, and last_updated to each product
         for product_to_create in product_list_for_category:
@@ -150,7 +153,7 @@ async def create_products(
             )
             return _extract_product_responses(batch_results, expected_status=201)
         except Exception as e:
-            def get_create_error_context(item: ProductCreate) -> Dict[str, Any]:
+            def get_create_error_context(item: ProductCreate) -> dict[str, Any]:
                 return {
                     "sku": item.sku,
                     "product_name": item.name
@@ -169,7 +172,7 @@ async def create_products(
 async def update_products(
     container: ContainerProxy,
     batch_update: ProductBatchUpdate,
-) -> List[ProductResponse]:
+) -> list[ProductResponse]:
     """
     Update multiple products in a batch operation with concurrent processing across categories.
     
@@ -183,15 +186,15 @@ async def update_products(
     if not batch_update.items:
         return []
 
-    updates_by_category: Dict[str, List] = defaultdict(list)
+    updates_by_category: dict[str, list[Any]] = defaultdict(list)
     for update_item in batch_update.items:
         updates_by_category[normalize_category(update_item.category)].append(update_item)
         
-    async def process_category_updates(category_pk: str, update_items_for_category: List):
+    async def process_category_updates(category_pk: str, update_items_for_category: list[Any]) -> list[ProductResponse]:
         if not update_items_for_category:
             return []
             
-        batch_operations_for_db = []
+        batch_operations_for_db: list[tuple[str, tuple[Any, ...], dict[str, Any]]] = []
 
         for update_item in update_items_for_category:
             update_dict = update_item.changes.model_dump(exclude_unset=True)
@@ -231,7 +234,7 @@ async def update_products(
             )
             return _extract_product_responses(batch_results, expected_status=200)
         except Exception as e:
-            def get_update_error_context(item: Any) -> Dict[str, Any]:
+            def get_update_error_context(item: Any) -> dict[str, Any]:
                 context = {"product_id": item.id}
                 # Get SKU and name from the changes if they were being updated
                 changes = item.changes.model_dump(exclude_unset=True)
@@ -254,7 +257,7 @@ async def update_products(
 async def delete_products(
     container: ContainerProxy,
     batch_delete: ProductBatchDelete,
-) -> List[str]:
+) -> list[str]:
     """
     Delete multiple products in a batch operation with concurrent processing across categories.
     
@@ -268,15 +271,15 @@ async def delete_products(
     if not batch_delete.items:
         return []
 
-    deletes_by_category: Dict[str, List[str]] = defaultdict(list) 
+    deletes_by_category: dict[str, list[str]] = defaultdict(list) 
     for delete_item in batch_delete.items:
         deletes_by_category[normalize_category(delete_item.category)].append(delete_item.id)
 
-    async def process_category_deletes(category_pk: str, product_ids_in_category: List[str]):
+    async def process_category_deletes(category_pk: str, product_ids_in_category: list[str]) -> list[str]:
         if not product_ids_in_category:
             return []
             
-        batch_operations_for_db: List[Tuple[str, Tuple[Any, ...], Dict[str, Any]]] = []
+        batch_operations_for_db: list[tuple[str, tuple[Any, ...], dict[str, Any]]] = []
         
         for product_id in product_ids_in_category:
             batch_operations_for_db.append(("delete", (product_id,), {}))
@@ -291,7 +294,7 @@ async def delete_products(
             # All deletes in this batch succeeded - return the IDs
             return product_ids_in_category
         except Exception as e:
-            def get_delete_error_context(item_id: str) -> Dict[str, Any]:
+            def get_delete_error_context(item_id: str) -> dict[str, Any]:
                 return {"product_id": item_id}
             
             await handle_batch_operation_error(

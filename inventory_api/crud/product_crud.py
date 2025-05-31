@@ -1,24 +1,25 @@
 """Core CRUD operations for products."""
-
-from azure.cosmos.aio import ContainerProxy
+import logging
 import uuid
 from datetime import datetime, timezone
 
+from azure.cosmos.aio import ContainerProxy
+
+from inventory_api.crud.cosmos_serialization import (
+    normalize_category,
+    prepare_decimals_for_cosmos_db,
+)
+from inventory_api.crud.product_queries import list_categories, list_products
+from inventory_api.exceptions import handle_cosmos_error
 from inventory_api.models.product import (
     ProductCreate,
-    ProductUpdate,
+    ProductIdentifier,
     ProductResponse,
-    ProductIdentifier,       
-    VersionedProductIdentifier,  
-    ProductStatus
+    ProductStatus,
+    ProductUpdate,
+    VersionedProductIdentifier,
 )
-import logging
-from inventory_api.exceptions import handle_cosmos_error
 
-from inventory_api.crud.cosmos_serialization import normalize_category, prepare_decimals_for_cosmos_db
-from inventory_api.crud.product_queries import list_products, list_categories
-
-# Create a logger for this module
 logger = logging.getLogger(__name__)
 
 __all__ = [
@@ -91,8 +92,7 @@ async def get_product_by_id(
 
     Args:
         container: Cosmos DB container client
-        product_id: ID of the product to retrieve
-        category: Category of the product (partition key)
+        product: Product identifier with ID and category
 
     Returns:
         The retrieved product details
@@ -223,7 +223,6 @@ async def delete_product(
         await container.delete_item(
             item=product_identifier.id, partition_key=normalized_category
         )
-        return 
     except Exception as e:
         logger.error(
             "Error during product deletion",

@@ -1,6 +1,6 @@
 """Base utilities for product CRUD operations."""
-from typing import Any, Dict
 from decimal import Decimal
+from typing import Any, Dict
 
 # Constants for Cosmos DB operations
 DEFAULT_MAX_ITEMS = 50
@@ -32,15 +32,17 @@ def prepare_decimals_for_cosmos_db(data: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         The same dictionary with Decimal values converted to float
     """
-    for key, value in list(data.items()):
+    def convert_decimal(value: Any) -> Any:
+        """Recursively convert Decimal values to float."""
         if isinstance(value, Decimal):
-            data[key] = float(value)
+            return float(value)
         elif isinstance(value, dict):
-            prepare_decimals_for_cosmos_db(value)
+            return {k: convert_decimal(v) for k, v in value.items()}
         elif isinstance(value, list):
-            data[key] = [
-                prepare_decimals_for_cosmos_db(item) if isinstance(item, dict) else 
-                float(item) if isinstance(item, Decimal) else item 
-                for item in value
-            ]
+            return [convert_decimal(item) for item in value]
+        return value
+    
+    for key, value in data.items():
+        data[key] = convert_decimal(value)
+    
     return data

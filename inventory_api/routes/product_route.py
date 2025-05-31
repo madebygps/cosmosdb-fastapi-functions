@@ -1,26 +1,26 @@
-from typing import Optional
-from fastapi import APIRouter, Body, Header, Path, Query, status, Depends
-from inventory_api.models.product import (
-    ProductCreate,
-    ProductList,
-    ProductUpdate,
-    ProductResponse,
-    VersionedProductIdentifier,
-    ProductIdentifier,
-)
+import logging
+
+from azure.cosmos.aio import ContainerProxy
+from fastapi import APIRouter, Body, Depends, Header, Path, Query, status
+
 from inventory_api.crud.product_crud import (
-    get_product_by_id,
-    list_products,
     create_product,
     delete_product,
-    update_product,
+    get_product_by_id,
     list_categories,
+    list_products,
+    update_product,
 )
-import logging
-from inventory_api.db import get_container, ContainerType
-from azure.cosmos.aio import ContainerProxy
+from inventory_api.db import ContainerType, get_container
+from inventory_api.models.product import (
+    ProductCreate,
+    ProductIdentifier,
+    ProductList,
+    ProductResponse,
+    ProductUpdate,
+    VersionedProductIdentifier,
+)
 
-# Create a logger for this module
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -38,7 +38,7 @@ async def get_categories(container: ContainerProxy = Depends(get_products_contai
 @router.get("/", response_model=ProductList)
 async def get_products_by_category(
     category: str = Query("electronics", title="The category to filter products by"),
-    continuation_token: Optional[str] = Query(None, title="Token for pagination"),
+    continuation_token: str | None = Query(None, title="Token for pagination"),
     limit: int = Query(50, title="Maximum number of items to return"),
     container: ContainerProxy = Depends(get_products_container),
 ):

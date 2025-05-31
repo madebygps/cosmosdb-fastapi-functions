@@ -1,16 +1,11 @@
+import logging
+from typing import Any
 
 import azure.functions as func
-import logging
-from fastapi import (
-    FastAPI,
-    HTTPException,
-    Security,
-    status,
-    Request,
-)
+from fastapi import FastAPI, HTTPException, Request, Security, status
+from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.security import APIKeyHeader, APIKeyQuery
-from fastapi.openapi.docs import get_swagger_ui_html
 
 from inventory_api.exceptions import register_exception_handlers
 from inventory_api.routes.product_route import router as product_router
@@ -37,7 +32,7 @@ async def get_api_key(
     api_key_from_header: str = Security(api_key_header_scheme),
     api_key_from_query: str = Security(api_key_query_scheme),
     req: Request = None,
-):
+) -> str:
     """Validate API key from header or query against Azure Function key if available."""
     client_api_key = api_key_from_header or api_key_from_query
     azure_expected_key = _get_azure_function_key(req)
@@ -80,12 +75,8 @@ register_exception_handlers(app)
 
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui_html() -> HTMLResponse:
-    cdn_swagger_js_url = (
-        "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui-bundle.js"
-    )
-    cdn_swagger_css_url = (
-        "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui.css"
-    )
+    cdn_swagger_js_url = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui-bundle.js"
+    cdn_swagger_css_url = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui.css"
     cdn_favicon_url = "https://fastapi.tiangolo.com/img/favicon.png"
 
     return get_swagger_ui_html(
@@ -112,7 +103,7 @@ def _get_azure_function_key(request: Request) -> str | None:
 
 
 @app.middleware("http")
-async def check_api_key_for_docs(request: Request, call_next):
+async def check_api_key_for_docs(request: Request, call_next) -> JSONResponse | Any:
     """
     Middleware to protect documentation endpoints if running in Azure
     and an Azure Function key is configured.
@@ -136,8 +127,6 @@ async def check_api_key_for_docs(request: Request, call_next):
                 )
     response = await call_next(request)
     return response
-
-
 
 app.include_router(product_router)
 app.include_router(product_batch_router)
