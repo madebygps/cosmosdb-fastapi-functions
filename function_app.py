@@ -29,9 +29,9 @@ api_key_query_scheme = APIKeyQuery(
 
 
 async def get_api_key(
+    req: Request,
     api_key_from_header: str = Security(api_key_header_scheme),
     api_key_from_query: str = Security(api_key_query_scheme),
-    req: Request = None,
 ) -> str:
     """Validate API key from header or query against Azure Function key if available."""
     client_api_key = api_key_from_header or api_key_from_query
@@ -95,9 +95,12 @@ def _get_azure_function_key(request: Request) -> str | None:
     Uses try-except for cleaner attribute access.
     """
     try:
-        if request.function_context and request.function_context.function_directory:
-            return request.function_context.function_directory.get_function_key()
-    except AttributeError:
+        function_context = getattr(request, 'function_context', None)
+        if function_context:
+            function_directory = getattr(function_context, 'function_directory', None)
+            if function_directory:
+                return function_directory.get_function_key()
+    except (AttributeError, TypeError):
         pass
     return None
 
