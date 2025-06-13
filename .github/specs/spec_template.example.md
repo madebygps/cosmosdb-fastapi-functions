@@ -1,66 +1,50 @@
-# Feature Specification Template
+# [Feature Name] Specification
 
 ## Overview
 
-Brief description of the functionality we're trying to implement.
+[Brief description of functionality to implement]
 
 ## Context
 
-- Background information
-- Business requirements
-- Technical constraints
-- Related features or dependencies
-- Any assumptions being made
-- Existing files to reference: #existing_file.py #config.py #models.py
+**Requirements**: [What the feature must accomplish]
+
+**Referenced files**: #file1.py #file2.py #file3.py
+
+**Constraints**: [Technical or business limitations]
 
 ## Success Criteria
 
-- [ ] Specific measurable outcome 1
-- [ ] Specific measurable outcome 2
-- [ ] Specific measurable outcome 3
-
-## Instructions
-
-- Any specific coding standards or patterns to follow
-- Error handling requirements
-- Testing requirements
-- Security considerations
-- Dependencies to use or avoid
+- [ ] [Specific behavior that must work]
+- [ ] [System requirement that must be met]  
+- [ ] [Integration requirement]
 
 ## Tasks
 
-### Task 1: [Task Name]
+### Task 1: [Action] [Component Name]
 
-**Description**: What needs to be accomplished
+[Action] `path/to/file.py`
 
-**Files**: #file1.ext #file2.ext
+**Implementation**:
 
-**Code Examples**:
-
-```generic
-// Example of expected structure or pattern (adapt to your language)
-function example_function() {
-    // Implementation
-}
+```python
+# Feature-specific pattern to follow
+def example_function():
+    pass
 ```
 
-**Expected Outcome**: What should be working after this task
+**Result**: [What should work after this task]
 
-### Task 2: [Task Name]
+### Task 2: [Action] [Component Name]
 
-**Description**: What needs to be accomplished
+[Action] `path/to/file.py`
 
-**Files**: #file3.ext #file4.ext
+**Implementation**:
 
-**Code Examples**:
-
-```generic
-// Another example (adapt to your language)
-class ExampleClass {
-    method() {
-        return "result";
-    }
-}
+```python
+# Feature-specific pattern to follow
+class ExampleClass:
+    def method(self):
+        return "result"
 ```
 
-**Expected Outcome**: What should be working after this task
+**Result**: [What should work after this task]

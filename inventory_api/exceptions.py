@@ -165,13 +165,14 @@ async def handle_batch_operation_error(
             error_context.update(failed_item_context)
         
         # Log the specific failures for debugging
-        for i, op_response in enumerate(e.operation_responses):
-            if i < len(items) and op_response.get("statusCode", 200) >= 400:
-                item_info = get_error_context(items[i], i)
-                item_desc = item_info.get("sku") or item_info.get("product_id", "unknown")
-                logger.error(
-                    f"  Failed {operation} op in batch for item '{item_desc}': {op_response}"
-                )
+        if e.operation_responses:
+            for i, op_response in enumerate(e.operation_responses):
+                if i < len(items) and op_response.get("statusCode", 200) >= 400:
+                    item_info = get_error_context(items[i], i)
+                    item_desc = item_info.get("sku") or item_info.get("product_id", "unknown")
+                    logger.error(
+                        f"  Failed {operation} op in batch for item '{item_desc}': {op_response}"
+                    )
         
         # Re-raise with proper context
         handle_cosmos_error(e, operation=operation, **error_context)
@@ -196,8 +197,9 @@ def register_exception_handlers(app: FastAPI) -> None:
         # Get the logger for the current module if possible
         logger = None
         try:
-            if request.scope.get("route") and request.scope.get("route").endpoint.__module__:
-                logger = logging.getLogger(request.scope.get("route").endpoint.__module__)
+            route = request.scope.get("route")
+            if route and hasattr(route, "endpoint") and route.endpoint and hasattr(route.endpoint, "__module__"):
+                logger = logging.getLogger(route.endpoint.__module__)
         except (AttributeError, KeyError):
             # Fallback to a default logger if we can't get the module
             logger = logging.getLogger("api.error_handler")
@@ -251,8 +253,9 @@ def register_exception_handlers(app: FastAPI) -> None:
         # Get the logger
         logger = None
         try:
-            if request.scope.get("route") and request.scope.get("route").endpoint.__module__:
-                logger = logging.getLogger(request.scope.get("route").endpoint.__module__)
+            route = request.scope.get("route")
+            if route and hasattr(route, "endpoint") and route.endpoint and hasattr(route.endpoint, "__module__"):
+                logger = logging.getLogger(route.endpoint.__module__)
         except (AttributeError, KeyError):
             logger = logging.getLogger("api.error_handler")
             

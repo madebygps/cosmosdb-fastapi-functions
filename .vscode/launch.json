@@ -6,9 +6,17 @@
       "type": "debugpy",
       "request": "attach",
       "connect": {
-        "port": 7071
+        "host": "localhost",
+        "port": 9091
       },
-      "preLaunchTask": "func: host start"
+      "preLaunchTask": "func: host start debug",
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}",
+          "remoteRoot": "/azure-functions-host/workers/python"
+        }
+      ],
+      "justMyCode": false
     }
   ]
 }

@@ -1,52 +1,42 @@
 ---
 mode: 'agent'
-tools: ['bash']
 description: 'Perform comprehensive Python security scan with semgrep, pip-audit, and bandit'
 ---
 
-# Basic Python Security Scan
+# Prerequisite: activate the project's virtual environment
+```bash
+# Make sure you are in the workspace root and venv is created
+source .venv/bin/activate
+```
+  
+Execute these tasks in this exact order:
 
-You are a security engineer performing a quick security scan of Python code for security vulnerabilities, excluding virtual environments and test files.
+1. Check Tool Availability
 
-
-## Process
-
-### Step 1: Check Tool Availability
 ```bash
 # Check all tools at once - install only if any are missing
 (semgrep --version && pip-audit --version && bandit --version) || uv pip install semgrep pip-audit bandit
 ```
 
-### Step 2: Run Security Scans (3 Commands)
+2. Scan for Vulnerable Dependencies
 
-**IMPORTANT: Run each scan only ONCE. Do not repeat unless specifically asked to scan again.**
-
-#### 1. Check Dependencies (Priority #1)
 ```bash
 pip-audit
 ```
 
-#### 2. Scan Code for Vulnerabilities  
+3. Scan for Code Vulnerabilities
+
 ```bash
-# Scan Python files only, exclude common non-source directories
-semgrep --config=auto --include="*.py" --exclude=".venv" --exclude="venv" --exclude="tests" --text . 2>/dev/null
+# Scan Python files only, exclude common non-source directories, output JSON
+semgrep --config=auto --include="*.py" --exclude=".venv" --json . > semgrep-report.json
 ```
 
-#### 3. Python-Specific Issues
+4. Scan for Security Issues in Code
+
 ```bash
-# Focus on Python source files, exclude virtual environments and tests
-bandit -r . --exclude=".venv/*,venv/*,tests/*,test_*" --include="*.py" --format json -o bandit-report.json
+# Focus on Python source files, exclude virtual environments and tests, output JSON
+bandit -r ./inventory_api --exclude ".venv" --format json -o bandit-report.json
 ```
 
-**After scanning, create a focused summary:**
-```bash
-# Show all issues organized by severity
-cat bandit-report.json | jq -r '
-  .results | group_by(.issue_severity) | 
-  .[] | "=== \(.[0].issue_severity) SEVERITY ===", 
-  (.[] | "\(.filename):\(.line_number) - \(.issue_text)")
-'
-```
+5. Report back findings in a structured format
 
-## Output
-After running all three scans ONCE, provide a summary of findings from each tool. If scans have already been completed in this conversation, do not run them again - just summarize the existing results.

@@ -2,9 +2,48 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"type": "func",
+			"type": "shell",
 			"label": "func: host start",
-			"command": "host start",
+			"command": "source .venv/bin/activate && func start",
+			"options": {
+				"cwd": "${workspaceFolder}",
+				"shell": {
+					"executable": "/bin/zsh",
+					"args": ["-c"]
+				}
+			},
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": true,
+				"clear": false
+			},
+			"problemMatcher": "$func-python-watch",
+			"isBackground": true
+		},
+		{
+			"type": "shell",
+			"label": "func: host start debug",
+			"command": "source .venv/bin/activate && languageWorkers__python__arguments='-m debugpy --listen 0.0.0.0:9091' func start",
+			"options": {
+				"cwd": "${workspaceFolder}",
+				"shell": {
+					"executable": "/bin/zsh",
+					"args": ["-c"]
+				}
+			},
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": true,
+				"clear": false
+			},
 			"problemMatcher": "$func-python-watch",
 			"isBackground": true
 		}
