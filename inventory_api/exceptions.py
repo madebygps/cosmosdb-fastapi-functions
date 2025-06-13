@@ -2,8 +2,13 @@ import logging
 from typing import Any, Callable
 
 from azure.cosmos.exceptions import CosmosBatchOperationError, CosmosHttpResponseError
+from azure.core.exceptions import ServiceRequestError
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
+
+# Set up debug logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class ApplicationError(Exception):
     """Base class for application-specific errors."""
@@ -26,6 +31,16 @@ class DatabaseError(ApplicationError):
     detail = "A database error occurred"
     
     def __init__(self, message: str = "A database error occurred.", original_exception: Exception | None = None) -> None:
+        logger.debug(f"DatabaseError initialized with message: {message}")  # Debug statement for testing
+        super().__init__(message)
+        self.original_exception = original_exception
+
+class DatabaseConnectionError(ApplicationError):
+    """Raised when there's a connection issue with the database."""
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    detail = "Database connection error"
+    
+    def __init__(self, message: str = "Database connection error", original_exception: Exception | None = None) -> None:
         super().__init__(message)
         self.original_exception = original_exception
 
@@ -52,6 +67,29 @@ def handle_cosmos_error(e: Exception, operation: str, **context: Any) -> None:
     Raises:
         Application-specific exception based on the error
     """
+    
+    # Handle connection-related errors first
+    if isinstance(e, ServiceRequestError):
+        # Check if it's a DNS resolution error
+        if "nodename nor servname provided, or not known" in str(e):
+            raise DatabaseConnectionError(
+                "Cannot connect to database: The database server could not be found. "
+                "Please check your database configuration and ensure the server is accessible.",
+                original_exception=e
+            ) from e
+        else:
+            raise DatabaseConnectionError(
+                f"Database connection error during {operation}: {str(e)}",
+                original_exception=e
+            ) from e
+    
+    # Handle aiohttp connection errors (which are wrapped in ServiceRequestError)
+    if "ClientConnectorDNSError" in str(type(e)) or "Cannot connect to host" in str(e):
+        raise DatabaseConnectionError(
+            "Cannot connect to database: The database server could not be found. "
+            "Please check your database configuration and ensure the server is accessible.",
+            original_exception=e
+        ) from e
     
     # Handle batch operation errors
     if isinstance(e, CosmosBatchOperationError):
@@ -226,6 +264,23 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code=exc.status_code,
             content={"detail": str(exc)}
         )
+    
+    # Special handler for ServiceRequestError (connection errors)
+    @app.exception_handler(ServiceRequestError)
+    async def service_request_exception_handler(request: Request, exc: ServiceRequestError) -> JSONResponse:
+        """Handle any uncaught Service Request errors (usually connection issues)."""
+        # Convert to application error first
+        if "nodename nor servname provided, or not known" in str(exc):
+            db_error = DatabaseConnectionError(
+                "Cannot connect to database: The database server could not be found. "
+                "Please check your database configuration and ensure the server is accessible.",
+                original_exception=exc
+            )
+        else:
+            db_error = DatabaseConnectionError(f"Database connection error: {str(exc)}", original_exception=exc)
+        
+        # Then handle using the application error handler
+        return await application_error_handler(request, db_error)
     
     # Special handler for CosmosDB errors that weren't caught
     @app.exception_handler(CosmosHttpResponseError)

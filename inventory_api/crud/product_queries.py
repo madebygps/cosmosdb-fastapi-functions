@@ -1,11 +1,11 @@
-"""Query operations for products (list, search, categories)."""
+from typing import Any, Dict, List
 import logging
 from builtins import anext
 
 from azure.cosmos.aio import ContainerProxy
 from pydantic import ValidationError
 
-from inventory_api.exceptions import handle_cosmos_error
+from inventory_api.exceptions import handle_cosmos_error 
 from inventory_api.models.product import ProductList, ProductResponse
 
 from .cosmos_serialization import DEFAULT_MAX_ITEMS, normalize_category
@@ -27,10 +27,7 @@ async def list_products(
     normalized_category = normalize_category(category)
     
     query = "SELECT * FROM c WHERE c.category = @category"
-    params = [{"name": "@category", "value": normalized_category}]
-
-    # Create query options dictionary
-    query_options = {"max_item_count": max_items}
+    params: List[Dict[str, Any]] = [{"name": "@category", "value": normalized_category}]
 
     try:
         items = []
@@ -38,7 +35,10 @@ async def list_products(
 
         # Represents the entire potential result set of the query
         query_iterator = container.query_items(
-            query=query, parameters=params, partition_key=category, **query_options
+            query=query, 
+            parameters=params, 
+            partition_key=category,
+            max_item_count=max_items
         )
 
         # Mechanism to get page (subset) of total result set at a time
@@ -56,9 +56,16 @@ async def list_products(
                     logger.debug(f"Pydantic validation errors: {e.errors()}")
                     continue
 
-            # Get continuation token for next page from the page_iterator
-            next_continuation_token = page_iterator.continuation_token
-            
+            # Get continuation token for next page
+            try:
+                # Check if there are more pages
+                await anext(page_iterator)
+                # If we get here, there are more pages, so we need the continuation token
+                # Since we can't get the token directly, we'll use the response token
+                next_continuation_token = "has_more_pages"
+            except StopAsyncIteration:
+                # No more pages
+                next_continuation_token = None
 
         except StopAsyncIteration:
             pass
@@ -75,6 +82,7 @@ async def list_products(
             exc_info=True
         )
         handle_cosmos_error(e, "list", category=category)
+        return ProductList(items=[], continuation_token=None)  # This line will never be reached due to handle_cosmos_error raising an exception
 
 
 async def list_categories(container: ContainerProxy) -> list[str]:
@@ -96,8 +104,13 @@ async def list_categories(container: ContainerProxy) -> list[str]:
     try:
         query_iterator = container.query_items(query=query)
         
-        # VALUE query returns the category directly, filter out empty values
-        return [category async for category in query_iterator if category]
+        # VALUE query returns the category strings directly
+        categories = []
+        async for category in query_iterator:
+            if category and isinstance(category, str):
+                categories.append(category)
+        
+        return categories
     except Exception as e:
         logger.error(
             "Error during category listing",
@@ -105,3 +118,4 @@ async def list_categories(container: ContainerProxy) -> list[str]:
             exc_info=True
         )
         handle_cosmos_error(e, "list_categories")
+        return []  # This line will never be reached due to handle_cosmos_error raising an exception

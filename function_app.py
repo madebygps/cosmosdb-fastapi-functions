@@ -7,7 +7,7 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.security import APIKeyHeader, APIKeyQuery
 
-from inventory_api.exceptions import register_exception_handlers
+from inventory_api.exceptions import register_exception_handlers, DatabaseError
 from inventory_api.routes.product_route import router as product_router
 from inventory_api.routes.product_route_batch import router as product_batch_router
 
@@ -133,6 +133,14 @@ async def check_api_key_for_docs(request: Request, call_next) -> JSONResponse | 
 
 app.include_router(product_router)
 app.include_router(product_batch_router)
+
+# Debug test endpoint
+@app.get("/debug-test")
+async def debug_test():
+    """Test endpoint to trigger exception for debugging."""
+    logger.info("Debug test endpoint called")
+    # This will trigger the DatabaseError.__init__ method where your breakpoint is set
+    raise DatabaseError("This is a test database error for debugging")
 
 function_app = func.FunctionApp()
 

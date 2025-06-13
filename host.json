@@ -21,10 +21,11 @@
       }
     },
     "logLevel": {
-      "default": "Information",
-      "Function": "Information",
-      "Host.Results": "Information",
-      "Host.Aggregator": "Information"
+      "default": "Debug",
+      "Function": "Debug",
+      "Host.Results": "Debug",
+      "Host.Aggregator": "Debug",
+      "Worker": "Debug"
     }
   },
   "extensionBundle": {

@@ -64,7 +64,7 @@ async def _execute_batch_by_category(
         else:
             if result_extractor and result is not None:
                 all_results.extend(result_extractor(result))
-            elif result is not None:
+            elif result is not None and isinstance(result, list):
                 all_results.extend(result)
     
     # If there were any exceptions, raise the first one
@@ -153,7 +153,7 @@ async def create_products(
             )
             return _extract_product_responses(batch_results, expected_status=201)
         except Exception as e:
-            def get_create_error_context(item: ProductCreate) -> dict[str, Any]:
+            def get_create_error_context(item: ProductCreate, index: int) -> dict[str, Any]:
                 return {
                     "sku": item.sku,
                     "product_name": item.name
@@ -162,6 +162,7 @@ async def create_products(
             await handle_batch_operation_error(
                 e, "create", category_pk, product_list_for_category, get_create_error_context
             )
+            return []  # This line will never be reached due to handle_batch_operation_error raising an exception
 
     return await _execute_batch_by_category(
         products_by_category,
@@ -234,7 +235,7 @@ async def update_products(
             )
             return _extract_product_responses(batch_results, expected_status=200)
         except Exception as e:
-            def get_update_error_context(item: Any) -> dict[str, Any]:
+            def get_update_error_context(item: Any, index: int) -> dict[str, Any]:
                 context = {"product_id": item.id}
                 # Get SKU and name from the changes if they were being updated
                 changes = item.changes.model_dump(exclude_unset=True)
@@ -247,6 +248,7 @@ async def update_products(
             await handle_batch_operation_error(
                 e, "update", category_pk, update_items_for_category, get_update_error_context
             )
+            return []  # This line will never be reached due to handle_batch_operation_error raising an exception
 
     return await _execute_batch_by_category(
         updates_by_category,
@@ -294,12 +296,13 @@ async def delete_products(
             # All deletes in this batch succeeded - return the IDs
             return product_ids_in_category
         except Exception as e:
-            def get_delete_error_context(item_id: str) -> dict[str, Any]:
+            def get_delete_error_context(item_id: str, index: int) -> dict[str, Any]:
                 return {"product_id": item_id}
             
             await handle_batch_operation_error(
                 e, "delete", category_pk, product_ids_in_category, get_delete_error_context
             )
+            return []  # This line will never be reached due to handle_batch_operation_error raising an exception
 
     return await _execute_batch_by_category(
         deletes_by_category,

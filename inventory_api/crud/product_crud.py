@@ -82,6 +82,8 @@ async def create_product(
             sku=data.get("sku"),
             product_name=data.get("name")
         )
+        # This line will never be reached due to handle_cosmos_error raising an exception
+        raise  # This satisfies the type checker
 
 
 async def get_product_by_id(
@@ -119,6 +121,8 @@ async def get_product_by_id(
             exc_info=True,
         )
         handle_cosmos_error(e, operation="get", product_id=product.id, category=product.category)
+        # This line will never be reached due to handle_cosmos_error raising an exception
+        raise  # This satisfies the type checker
 
 
 async def update_product(
@@ -199,6 +203,8 @@ async def update_product(
             operation="update", 
             **error_context 
         )
+        # This line will never be reached due to handle_cosmos_error raising an exception
+        raise  # This satisfies the type checker
 
 async def delete_product(
     container: ContainerProxy,
