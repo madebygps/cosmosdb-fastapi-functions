@@ -13,13 +13,6 @@ Perform a comprehensive security scan of this Azure Functions Python project usi
 ### Review Existing Problems
 Check #problems for any existing security-related warnings or errors in the workspace before running security tools.
 
-## Prerequisites
-
-Ensure the project's virtual environment is activated:
-```bash
-source ${workspaceFolder}/.venv/bin/activate
-```
-
 ## Security Scan Tasks
 
 ### 1. Tool Installation Check
