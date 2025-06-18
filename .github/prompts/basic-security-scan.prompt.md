@@ -8,50 +8,42 @@ description: 'Perform comprehensive Python security scan for Azure Functions pro
 
 Perform a comprehensive security scan of this Azure Functions Python project using industry-standard tools. Focus on identifying vulnerabilities in dependencies, code patterns, and security configurations.
 
-## Initial Checks
+## Tasks
 
-### Review Existing Problems
-Check #problems for any existing security-related warnings or errors in the workspace before running security tools.
+1. Ensure the Python Virtual Environment set in .vscode/settings.json is activated
 
-## Security Scan Tasks
+2. Use the #problems tool to check for any existing security-related warnings or errors in the workspace
 
-### 1. Tool Installation Check
+3. Check if security tools are installed, check all tools at once - install only if any are missing using this command:
 
-First, verify all security tools are available:
-```bash
-# Check all tools at once - install only if any are missing
-(semgrep --version && pip-audit --version && bandit --version) || uv pip install semgrep pip-audit bandit
+```sh
+    (semgrep --version && pip-audit --version && bandit --version) || uv pip install semgrep pip-audit bandit
 ```
 
-### 2. Dependency Vulnerability Scan
+4. Do a Dependency Vulnerability Scan with pip-audit using the following command:
 
-Scan for known vulnerabilities in Python packages:
-```bash
-# Run pip-audit to check for vulnerable dependencies
-pip-audit --desc --fix
+```sh
+    pip-audit --desc --fix
 ```
 
-### 3. Code Security Analysis with Semgrep
-
-Perform static analysis for security patterns:
-```bash
-# Scan Python files for security issues, exclude virtual environments
-semgrep --config=auto --include="*.py" --exclude=".venv,__pycache__,*.pyc" --json --output=semgrep-report.json .
+5. Scan for known vulnerabilities in Python packages with pip-audit using the following command:
+```sh
+    pip-audit --desc --fix
 ```
 
-### 4. Python Security Scan with Bandit
+5. Scan Python files for security issues, exclude virtual environments, using the following Semgrep command:
 
-Run Bandit for Python-specific security issues:
-```bash
-# Focus on source code, exclude test files and virtual environments
-bandit -r ./inventory_api ./function_app.py --exclude ".venv,tests" --format json -o bandit-report.json
+```sh
+    semgrep --config=auto --include="*.py" --exclude=".venv,__pycache__,*.pyc" --json --output=semgrep-report.json .
 ```
 
-## Report Format
+6. Scan for Python-specific issues, exclude test files and virtual environments, with the following Bandit command:
 
-After completing all scans, provide a structured security report:
+```sh
+    bandit -r ./inventory_api ./function_app.py --exclude ".venv,tests" --format json -o bandit-report.json
+```
 
-### Summary
-- Total vulnerabilities found (by severity)
-- Critical issues requiring immediate attention
-- Recommendations for security improvements
+7. Report your Findings with a structured security report summarizing the results of the scans. Include the following details:
+    - Total vulnerabilities found (by severity)
+    - Critical issues requiring immediate attention
+    - Recommendations for security improvements
