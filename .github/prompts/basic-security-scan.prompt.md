@@ -10,6 +10,8 @@ Perform a comprehensive security scan of this Azure Functions Python project usi
 
 ## Tasks
 
+Execute the following steps in ORDER to ensure a thorough security assessment:
+
 1. Ensure the Python Virtual Environment set in .vscode/settings.json is activated
 
 2. Use the #problems tool to check for any existing security-related warnings or errors in the workspace
@@ -22,11 +24,6 @@ Perform a comprehensive security scan of this Azure Functions Python project usi
 
 4. Do a Dependency Vulnerability Scan with pip-audit using the following command:
 
-```sh
-    pip-audit --desc --fix
-```
-
-5. Scan for known vulnerabilities in Python packages with pip-audit using the following command:
 ```sh
     pip-audit --desc --fix
 ```
