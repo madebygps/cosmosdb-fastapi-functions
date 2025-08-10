@@ -9,8 +9,6 @@ from inventory_api.exceptions import register_exception_handlers
 from inventory_api.routes.product_route import router as product_router
 from inventory_api.routes.product_route_batch import router as product_batch_router
 from inventory_api.security import (
-    api_key_header_scheme,
-    api_key_query_scheme,
     check_api_key_for_docs,
     get_api_key,
 )
@@ -24,16 +22,6 @@ app = FastAPI(
     openapi_url="/api/openapi.json",   
     docs_url=None,  
     redoc_url=None,
-    openapi_components={
-        "securitySchemes": {
-            api_key_header_scheme.scheme_name: api_key_header_scheme.model.model_dump(
-                exclude_none=True
-            ),
-            api_key_query_scheme.scheme_name: api_key_query_scheme.model.model_dump(
-                exclude_none=True
-            ),
-        }
-    },
     dependencies=[Security(get_api_key)],
 )
 
