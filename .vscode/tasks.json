@@ -13,15 +13,36 @@
 			"label": "pip install (functions)",
 			"type": "shell",
 			"osx": {
-				"command": "uv pip install -r requirements.txt"
+				"command": "uv pip install -r requirements.txt --python ${config:azureFunctions.pythonVenv}/bin/python"
 			},
 			"windows": {
-				"command": "${config:azureFunctions.pythonVenv}\\Scripts\\python -m pip install -r requirements.txt"
+				"command": "uv pip install -r requirements.txt --python ${config:azureFunctions.pythonVenv}\\Scripts\\python.exe"
 			},
 			"linux": {
-				"command": "${config:azureFunctions.pythonVenv}/bin/python -m pip install -r requirements.txt"
+				"command": "uv pip install -r requirements.txt --python ${config:azureFunctions.pythonVenv}/bin/python"
 			},
 			"problemMatcher": []
+		},
+		{
+			"label": "start func host (venv)",
+			"type": "shell",
+			"command": "source .venv/bin/activate && func host start",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "func: host start (shell)",
+			"type": "shell",
+			"command": "source .venv/bin/activate && func host start",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "pip install (functions)",
+			"type": "shell",
+			"command": "uv pip install -r requirements.txt --python ${config:azureFunctions.pythonVenv}/bin/python",
+			"problemMatcher": [],
+			"group": "build"
 		}
 	]
 }
