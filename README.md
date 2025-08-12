@@ -19,6 +19,11 @@ This is an inventory management API that lets you:
 - [Python 3.11+](https://www.python.org/downloads/)
 - [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)
 - [Azure Developer CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- [Azurite](https://learn.microsoft.com/azure/storage/common/storage-use-azurite) (for local storage emulator)
+  - VS Code "Azurite" extension, or
+  - npm i -g azurite, or
+  - brew install azurite (macOS)
 
 ## Getting Started
 
@@ -91,6 +96,10 @@ Your `local.settings.json` should include:
 }
 ```
 
+Notes:
+- If `AzureWebJobsStorage` is `UseDevelopmentStorage=true`, start Azurite locally so the Functions host can acquire host locks and write logs.
+- Alternatively, set `AzureWebJobsStorage` to a real Storage Account connection string.
+
 **Required Environment Variables:**
 
 | Variable | Description |
@@ -102,21 +111,29 @@ Your `local.settings.json` should include:
 
 ### 3. Install Dependencies
 
-Start a virtual environment:
+Create and use a virtual environment, then install with uv:
 
 ```bash
-python -m venv .venv
+uv venv
 source .venv/bin/activate  # On Windows use .venv\Scripts\activate
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
-Start the function app:
+### 4. Start Azurite (if using UseDevelopmentStorage=true)
+
+Run Azurite so blob/table/queue endpoints are available at 127.0.0.1:10000/10001/10002.
 
 ```bash
-func start
+# VS Code: use the Azurite extension (Start All)
+# or via npm
+azurite --silent &
 ```
 
-### 4. Access the Local API
+### 5. Run the Function App Locally
+
+1. If you are using VS Code, use the **Run and Debug** panel (Ctrl+Shift+D/CMD+Shift+D) or run the task "func: host start (shell)" which activates the venv and starts the Functions host.
+
+### 6. Access the Local API
 
 Navigate to [http://localhost:7071/docs?code=apikey](http://localhost:7071/docs?code=apikey)
 
@@ -128,3 +145,4 @@ Click on the **Authorize** button and enter the `apikey` as the value. Locally a
 |-------|----------|
 | **Cosmos DB Access Issues** | Ensure you're logged into Azure CLI with the correct account and have run the `cosmosdb_access.sh` script |
 | **Missing Environment Variables** | Check that you've copied all required values from `.azure/[environment-name]/.env` to `local.settings.json` |
+| **Host lock/storage errors (127.0.0.1:10000/10002)** | Start Azurite locally or point `AzureWebJobsStorage` to a real Storage Account |
