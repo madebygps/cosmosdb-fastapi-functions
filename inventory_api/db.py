@@ -45,7 +45,7 @@ try:
     logger.info("Initializing Cosmos DB client with DefaultAzureCredential")
     _credential = DefaultAzureCredential()
 
-    cosmos_client = CosmosClient(COSMOSDB_ENDPOINT, _credential, request_timeout=30)
+    cosmos_client = CosmosClient(COSMOSDB_ENDPOINT, _credential)
 
     logger.info(
         "Cosmos DB client initialized successfully",
