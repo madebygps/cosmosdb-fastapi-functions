@@ -25,3 +25,5 @@ applyTo: "**.py"
 
 ## Azure Tools (MANDATORY)
 - When ANY Azure question/code: ALWAYS use `microsoft_docs_search` tool first
+
+To debug code use the `"func: host start"` task in `.vscode/tasks.json`.
