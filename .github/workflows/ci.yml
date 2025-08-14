@@ -22,8 +22,7 @@ jobs:
       - name: Run unit tests (exclude integration)
         run: python -m pytest -q -k "not integration"
       - name: Run pre-commit hooks
-        uses: pre-commit/action@v3.5.0
+        uses: pre-commit/action@v3.0.1
         with:
           extra_args: --all-files
 
-  # mypy was removed from CI; run it locally or add it back if you want type checks in CI
