@@ -103,7 +103,7 @@ resource flexFuncApp 'Microsoft.Web/sites@2024-04-01' = {
           name: 'PYTHON_ENABLE_WORKER_EXTENSIONS'
           value: '1'
         }
-      
+
         {
           name: 'APPLICATIONINSIGHTS_ENABLE_DEPENDENCY_CORRELATION'
           value: 'true'
@@ -121,7 +121,7 @@ resource flexFuncApp 'Microsoft.Web/sites@2024-04-01' = {
           value: cosmosDbProductsContainer
         }
       ]
-     
+
     }
     functionAppConfig: {
       deployment: {

@@ -1,10 +1,10 @@
-from typing import Dict
-from azure.cosmos.aio import CosmosClient, ContainerProxy
-from azure.identity.aio import DefaultAzureCredential
-import os
 import logging
+import os
 from enum import Enum
+from typing import Dict
 
+from azure.cosmos.aio import ContainerProxy, CosmosClient
+from azure.identity.aio import DefaultAzureCredential
 
 logger = logging.getLogger(__name__)
 
