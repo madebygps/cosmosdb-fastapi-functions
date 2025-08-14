@@ -3,14 +3,7 @@ import logging
 from azure.cosmos.aio import ContainerProxy
 from fastapi import APIRouter, Body, Depends, Header, Path, Query, status
 
-from inventory_api.crud.product_crud import (
-    create_product,
-    delete_product,
-    get_product_by_id,
-    list_categories,
-    list_products,
-    update_product,
-)
+from inventory_api.crud.product_crud import list_categories, list_products
 from inventory_api.db import ContainerType, get_container
 from inventory_api.models.product import (
     ProductCreate,
@@ -19,6 +12,12 @@ from inventory_api.models.product import (
     ProductResponse,
     ProductUpdate,
     VersionedProductIdentifier,
+)
+from inventory_api.services.product_service import (
+    create_product,
+    delete_product,
+    get_product_by_id,
+    update_product,
 )
 
 logger = logging.getLogger(__name__)
@@ -98,4 +97,4 @@ async def get_product(
     container: ContainerProxy = Depends(get_products_container),
 ):
     product = ProductIdentifier(id=id, category=category)
-    return await get_product_by_id(container=container, product=product)
+    return await get_product_by_id(container=container, identifier=product)
