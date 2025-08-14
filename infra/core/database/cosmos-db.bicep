@@ -78,7 +78,7 @@ resource productsContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/c
       }
       indexingPolicy: {
         indexingMode: 'consistent'
-        includedPaths: [  
+        includedPaths: [
           { path: '/sku/?' }
           { path: '/name/?' }
           { path: '/category/?' }
@@ -91,7 +91,7 @@ resource productsContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/c
    }
  }
 }
-  
+
 
 
 output cosmosEndpoint string = cosmosDbAccount.properties.documentEndpoint

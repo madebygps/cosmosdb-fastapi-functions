@@ -8,10 +8,7 @@ from fastapi.responses import HTMLResponse
 from inventory_api.exceptions import register_exception_handlers
 from inventory_api.routes.product_route import router as product_router
 from inventory_api.routes.product_route_batch import router as product_batch_router
-from inventory_api.security import (
-    check_api_key_for_docs,
-    get_api_key,
-)
+from inventory_api.security import check_api_key_for_docs, get_api_key
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +16,8 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Inventory API",
     version="1.0.0",
-    openapi_url="/api/openapi.json",   
-    docs_url=None,  
+    openapi_url="/api/openapi.json",
+    docs_url=None,
     redoc_url=None,
     dependencies=[Security(get_api_key)],
 )

@@ -12,3 +12,7 @@ azure-identity
 python-dotenv
 aiohttp
 debugpy
+pre-commit
+ruff
+pytest
+pytest-asyncio
