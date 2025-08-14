@@ -15,3 +15,4 @@ debugpy
 pre-commit
 ruff
 pytest
+pytest-asyncio
